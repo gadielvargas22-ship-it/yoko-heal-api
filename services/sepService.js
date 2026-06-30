@@ -46,9 +46,7 @@ if (await linkCedula.isVisible().catch(() => false)) {
         }
 
         // 5. Seleccionar búsqueda por número
-        await page.getByRole("link", {
-            name: "Número de cédula"
-        }).click();
+        await page.locator("text=Número de cédula").click();
 
         // 6. Escribir cédula
         await page.getByRole("textbox", { name: "Cédula" }).fill(cedula);
