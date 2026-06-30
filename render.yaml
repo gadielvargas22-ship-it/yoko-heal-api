@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: yoko-heal-api
-    runtime: node
-    buildCommand: npm install && npx playwright install chromium
-    startCommand: npm start
