@@ -13,67 +13,57 @@ export async function validarCedulaSEP(cedula) {
         console.log("=================================");
         console.log("Consultando cédula:", cedula);
 
-        // Portal principal
+        // 1. Ir al portal principal
         await page.goto("https://profesiones.sep.gob.mx/", {
-            waitUntil: "networkidle"
+            waitUntil: "domcontentloaded"
         });
 
-        // Abrir consulta pública
-        const [popup] = await Promise.all([
-            page.waitForEvent("popup"),
-            page.getByRole("link", {
-                name: "Consulta Pública Información"
-            }).click()
-        ]);
+        // 2. Ir directo a la consulta pública (sin popup)
+        await page.getByRole("link", {
+            name: "Consulta Pública Información"
+        }).click();
 
-        await popup.waitForLoadState("networkidle");
+        await page.waitForLoadState("networkidle");
 
-        await popup.goto(
-            "https://cedulaprofesional.sep.gob.mx/",
-            {
-                waitUntil: "networkidle"
-            }
-        );
+        // 3. Ir a la página de cédulas
+        await page.goto("https://cedulaprofesional.sep.gob.mx/", {
+            waitUntil: "domcontentloaded"
+        });
 
-        // Cerrar aviso si aparece
-        const cerrar = popup.getByRole("button", { name: "×" });
+        // 🔥 IMPORTANTE: esperar render real
+        await page.waitForTimeout(2000);
 
+        // 4. Cerrar modal si aparece
+        const cerrar = page.getByRole("button", { name: "×" });
         if (await cerrar.isVisible().catch(() => false)) {
             await cerrar.click();
         }
 
-        // Buscar por número
-        await popup.getByRole("link", {
+        // 5. Seleccionar búsqueda por número
+        await page.getByRole("link", {
             name: "Número de cédula"
         }).click();
 
-        // Escribir cédula
-        await popup
-            .getByRole("textbox", { name: "Cédula" })
-            .fill(cedula);
+        // 6. Escribir cédula
+        await page.getByRole("textbox", { name: "Cédula" }).fill(cedula);
 
         console.log("Cédula escrita correctamente");
 
-        // Buscar
-        await popup
-            .getByRole("button", { name: "Buscar" })
-            .click();
+        // 7. Buscar
+        await page.getByRole("button", { name: "Buscar" }).click();
 
         console.log("Esperando resultados...");
 
-        // Esperar unos segundos para que Angular renderice
-        await popup.waitForTimeout(4000);
+        // 8. Espera render Angular
+        await page.waitForTimeout(4000);
 
-        const filas = popup.locator("tbody tr");
-
+        // 9. Validar resultados
+        const filas = page.locator("tbody tr");
         const totalFilas = await filas.count();
 
         console.log("Filas encontradas:", totalFilas);
 
         if (totalFilas === 0) {
-
-            console.log("No hubo resultados.");
-
             return {
                 success: false,
                 valida: false,
@@ -83,8 +73,7 @@ export async function validarCedulaSEP(cedula) {
 
         const data = await filas.first().locator("td").allTextContents();
 
-        console.log("Datos obtenidos:");
-        console.log(data);
+        console.log("Datos obtenidos:", data);
 
         return {
             success: true,
@@ -104,8 +93,7 @@ export async function validarCedulaSEP(cedula) {
 
     } catch (error) {
 
-        console.error("ERROR PLAYWRIGHT");
-        console.error(error);
+        console.error("ERROR PLAYWRIGHT:", error);
 
         return {
             success: false,
