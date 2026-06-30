@@ -13,30 +13,27 @@ export async function validarCedulaSEP(cedula) {
         console.log("=================================");
         console.log("Consultando cédula:", cedula);
 
-        // 1. Ir al portal principal
+        // 1. Portal principal
         await page.goto("https://profesiones.sep.gob.mx/", {
-    waitUntil: "networkidle",
-    timeout: 60000
-});
+            waitUntil: "networkidle",
+            timeout: 60000
+        });
 
-        // 2. Ir directo a la consulta pública (sin popup)
+        // 2. Ir a consulta pública
         await page.getByRole("link", {
             name: "Consulta Pública Información"
         }).click();
 
         await page.waitForLoadState("networkidle");
 
-        // 3. Ir a la página de cédulas
-        await page.waitForTimeout(3000);
+        // 3. Ir directo a cédulas
+        await page.goto("https://cedulaprofesional.sep.gob.mx/", {
+            waitUntil: "domcontentloaded",
+            timeout: 60000
+        });
 
-const linkCedula = page.getByRole("link", {
-    name: "Consulta Pública Información"
-});
-
-if (await linkCedula.isVisible().catch(() => false)) {
-    await linkCedula.click();
-}
-        // 🔥 IMPORTANTE: esperar render real
+        // 🔥 ESPERA CRÍTICA (CORREGIDO)
+        await page.waitForLoadState("domcontentloaded");
         await page.waitForTimeout(2000);
 
         // 4. Cerrar modal si aparece
@@ -45,11 +42,19 @@ if (await linkCedula.isVisible().catch(() => false)) {
             await cerrar.click();
         }
 
-        // 5. Seleccionar búsqueda por número
-        await page.locator("text=Número de cédula").click();
+        // 5. Seleccionar búsqueda por “cédula” (ROBUSTO)
+        const botones = page.locator("button, a, div, span");
 
-        // 6. Escribir cédula
-        await page.getByRole("textbox", { name: "Cédula" }).fill(cedula);
+        const opcionCedula = botones.filter({
+            hasText: /c[eé]dula/i
+        }).first();
+
+        await opcionCedula.click();
+
+        // 6. Input
+        const input = page.getByRole("textbox", { name: "Cédula" });
+        await input.waitFor({ state: "visible", timeout: 15000 });
+        await input.fill(cedula);
 
         console.log("Cédula escrita correctamente");
 
@@ -58,10 +63,9 @@ if (await linkCedula.isVisible().catch(() => false)) {
 
         console.log("Esperando resultados...");
 
-        // 8. Espera render Angular
-        await page.waitForTimeout(4000);
+        // 8. Espera resultados reales (mejor que timeout fijo)
+        await page.waitForTimeout(5000);
 
-        // 9. Validar resultados
         const filas = page.locator("tbody tr");
         const totalFilas = await filas.count();
 
