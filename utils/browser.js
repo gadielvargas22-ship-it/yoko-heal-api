@@ -20,7 +20,8 @@ export async function iniciarBrowser() {
 
     const page = await context.newPage();
 
-    page.setDefaultTimeout(30000);
+    page.setDefaultTimeout(60000);
+page.setDefaultNavigationTimeout(60000);
 
     return {
         browser,

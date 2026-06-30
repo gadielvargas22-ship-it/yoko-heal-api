@@ -15,8 +15,9 @@ export async function validarCedulaSEP(cedula) {
 
         // 1. Ir al portal principal
         await page.goto("https://profesiones.sep.gob.mx/", {
-            waitUntil: "domcontentloaded"
-        });
+    waitUntil: "networkidle",
+    timeout: 60000
+});
 
         // 2. Ir directo a la consulta pública (sin popup)
         await page.getByRole("link", {
@@ -26,10 +27,15 @@ export async function validarCedulaSEP(cedula) {
         await page.waitForLoadState("networkidle");
 
         // 3. Ir a la página de cédulas
-        await page.goto("https://cedulaprofesional.sep.gob.mx/", {
-            waitUntil: "domcontentloaded"
-        });
+        await page.waitForTimeout(3000);
 
+const linkCedula = page.getByRole("link", {
+    name: "Consulta Pública Información"
+});
+
+if (await linkCedula.isVisible().catch(() => false)) {
+    await linkCedula.click();
+}
         // 🔥 IMPORTANTE: esperar render real
         await page.waitForTimeout(2000);
 
