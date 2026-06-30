@@ -1,0 +1,27 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "Backend para validación de cédulas y servicios de YOKO-HEAL",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "yoko-heal",
+    "api",
+    "firebase",
+    "sep",
+    "cedula",
+    "playwright"
+  ],
+  "author": "Gadiel",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "playwright": "^1.61.1"
+  }
+}
