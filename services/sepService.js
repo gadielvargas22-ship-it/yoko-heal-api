@@ -10,61 +10,102 @@ export async function validarCedulaSEP(cedula) {
 
     try {
 
-        // 1. Ir al portal
-        await page.goto("https://profesiones.sep.gob.mx/");
+        console.log("=================================");
+        console.log("Consultando cédula:", cedula);
 
-        // 2. Ir a consulta pública
+        // Portal principal
+        await page.goto("https://profesiones.sep.gob.mx/", {
+            waitUntil: "networkidle"
+        });
+
+        // Abrir consulta pública
         const [popup] = await Promise.all([
             page.waitForEvent("popup"),
-            page.getByRole("link", { name: "Consulta Pública Información" }).click()
+            page.getByRole("link", {
+                name: "Consulta Pública Información"
+            }).click()
         ]);
 
-        // 3. Ir al sitio de cédulas
-        await popup.goto("https://cedulaprofesional.sep.gob.mx/");
+        await popup.waitForLoadState("networkidle");
 
-        // 4. Cerrar popup si aparece
+        await popup.goto(
+            "https://cedulaprofesional.sep.gob.mx/",
+            {
+                waitUntil: "networkidle"
+            }
+        );
+
+        // Cerrar aviso si aparece
         const cerrar = popup.getByRole("button", { name: "×" });
+
         if (await cerrar.isVisible().catch(() => false)) {
             await cerrar.click();
         }
 
-        // 5. Seleccionar búsqueda por número
-        await popup.getByRole("link", { name: "Número de cédula" }).click();
+        // Buscar por número
+        await popup.getByRole("link", {
+            name: "Número de cédula"
+        }).click();
 
-        // 6. Escribir cédula
-        const input = popup.getByRole("textbox", { name: "Cédula" });
-        await input.fill(cedula);
+        // Escribir cédula
+        await popup
+            .getByRole("textbox", { name: "Cédula" })
+            .fill(cedula);
 
-        // 7. Buscar
-        await popup.getByRole("button", { name: "Buscar" }).click();
+        console.log("Cédula escrita correctamente");
 
-        // 8. Esperar resultados
-        await popup.waitForSelector("tbody tr", { timeout: 15000 });
+        // Buscar
+        await popup
+            .getByRole("button", { name: "Buscar" })
+            .click();
 
-        // 9. Tomar primera fila
-        const fila = popup.locator("tbody tr").first();
+        console.log("Esperando resultados...");
 
-        const data = await fila.locator("td").allTextContents();
+        // Esperar unos segundos para que Angular renderice
+        await popup.waitForTimeout(4000);
 
-        const resultado = {
+        const filas = popup.locator("tbody tr");
+
+        const totalFilas = await filas.count();
+
+        console.log("Filas encontradas:", totalFilas);
+
+        if (totalFilas === 0) {
+
+            console.log("No hubo resultados.");
+
+            return {
+                success: false,
+                valida: false,
+                message: "La cédula no fue encontrada en la SEP"
+            };
+        }
+
+        const data = await filas.first().locator("td").allTextContents();
+
+        console.log("Datos obtenidos:");
+        console.log(data);
+
+        return {
             success: true,
             valida: true,
-            numeroCedula: data[0] || cedula,
-            nombre: data[1] || "",
-            apellidoPaterno: data[2] || "",
-            apellidoMaterno: data[3] || "",
-            genero: data[4] || "",
-            institucion: data[5] || "",
-            profesion: data[6] || "",
-            entidad: data[7] || "",
-            anioRegistro: data[8] || "",
+            numeroCedula: data[0] ?? cedula,
+            nombre: data[1] ?? "",
+            apellidoPaterno: data[2] ?? "",
+            apellidoMaterno: data[3] ?? "",
+            genero: data[4] ?? "",
+            institucion: data[5] ?? "",
+            profesion: data[6] ?? "",
+            entidad: data[7] ?? "",
+            anioRegistro: data[8] ?? "",
             fechaConsulta: new Date().toISOString(),
             fuente: "SEP"
         };
 
-        return resultado;
-
     } catch (error) {
+
+        console.error("ERROR PLAYWRIGHT");
+        console.error(error);
 
         return {
             success: false,
